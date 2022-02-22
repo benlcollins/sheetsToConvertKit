@@ -38,7 +38,7 @@ function test(){
 }
 
 /**
- * setup menu to run print Mailchimp function from Sheet
+ * setup menu to run print ConvertKit function from Sheet
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
