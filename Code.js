@@ -44,13 +44,14 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
 
   ui.createMenu('ConvertKit Menu')
-    .addItem('Get ConvertKit data', 'postConvertKitDataToSheet_V2')
+    .addItem('Get ConvertKit data', 'postConvertKitDataToSheet')
+    .addItem('Email ConvertKit report', 'exportAndSend')
     .addToUi();
 
 }
 
 /********************************************************************************************
- * REPORT DISTRIBUTION FUNCTIONS
+ * EMAIL FUNCTIONS
 ********************************************************************************************/
 
 /**
@@ -105,7 +106,7 @@ function exportAndSend() {
 /**
  * add the data to our sheet
  */
-function postConvertKitDataToSheet_V2() {
+function postConvertKitDataToSheet() {
   
   // Get Sheet
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -130,36 +131,6 @@ function postConvertKitDataToSheet_V2() {
   
 }
 
-/**
- * add the data to our sheet
- */
-function postConvertKitDataToSheet_V1() {
-  
-  // Get Sheet
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const listSheet = ss.getSheetByName('listDataV1');
-  const broadcastSheet = ss.getSheetByName('broadcastData');
-  const lastRow = listSheet.getLastRow();
-
-  // get yesterday date
-  const yesterday = getYesterday();
-
-  // get data
-  const newSubs = getConvertKitSubs();
-  const newUnsubs = getConvertKitUnsubs();
-  const broadcastData = getBroadcastData();
-
-  // paste list growth results into Sheet
-  listSheet.getRange(lastRow+1,1).setValue(yesterday);
-  listSheet.getRange(lastRow+1,2).setValue(newSubs);
-  listSheet.getRange(lastRow+1,3).setValue(newUnsubs);
-  listSheet.getRange(lastRow+1,4).setFormulaR1C1("=R[0]C[-2]-R[0]C[-1]");
-  listSheet.getRange(lastRow+1,5).setFormulaR1C1("=R[-1]C[0]+R[0]C[-1]");
-
-  // paste latest campaign data into Sheet
-  broadcastSheet.getRange(2,1,broadcastData.length,8).setValues(broadcastData);
-  
-}
 
 /********************************************************************************************
  * API CALLS
@@ -264,80 +235,6 @@ function getIndividualBroadcastData(broadcastID) {
   // return data
   return jsonData;
 
-}
-
-/**
- * function to retrieve ConvertKit unsubs
- */
-function getConvertKitUnsubs() {
-
-  // get yesterday in correct format
-  const yesterday = getYesterday();
-  // const yesterday = '2022-02-23';
-
-  // URL for the ConvertKit API
-  const root = 'https://api.convertkit.com/v3/';  
-  const endpoint = 'subscribers';
-  const query = `?api_secret=${API_SECRET}&from=${yesterday}&to=${yesterday}&sort_field=cancelled_at`;
-
-  // setup params object
-  var params = {
-    'method': 'GET',
-    'muteHttpExceptions': true
-  };
-  
-  // check api
-  console.log(root + endpoint + query);
-  
-  // call the ConvertKit API
-  const response = UrlFetchApp.fetch(root + endpoint + query, params);
-  
-  // parse data
-  const data = response.getContentText();
-  const jsonData = JSON.parse(data);
-  const newUnsubs = jsonData.total_subscribers;
-  
-  // test unsubs
-  console.log(newUnsubs);
-
-  // return unsubscribes yesterday
-  return newUnsubs;
-}
-
-/**
- * function to retrieve ConvertKit Subs
- */
-function getConvertKitSubs() {
-  
-  // get yesterday in correct format
-  const yesterday = getYesterday();
-
-  // URL for the ConvertKit API
-  const root = 'https://api.convertkit.com/v3/';  
-  const endpoint = 'subscribers';
-  const query = `?api_secret=${API_SECRET}&from=${yesterday}&to=${yesterday}`;
-
-  // setup params object
-  var params = {
-    'method': 'GET',
-    'muteHttpExceptions': true
-  };
-  
-  // check api
-  console.log(root + endpoint + query);
-  
-  // call the ConvertKit API
-  const response = UrlFetchApp.fetch(root + endpoint + query, params);
-  
-  // parse data
-  const data = response.getContentText();
-  const jsonData = JSON.parse(data);
-  console.log('testing here');
-  console.log(jsonData);
-  const newSubs = jsonData.total_subscribers;
-  
-  // return total new subscribers yesterday
-  return newSubs;
 }
 
 /**
