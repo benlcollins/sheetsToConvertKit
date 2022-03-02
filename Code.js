@@ -14,6 +14,7 @@
  */
 const API_KEY = getApiKey();
 const API_SECRET = getApiSecret();
+const RECIPIENTS = 'example@example.com'; // add extra emails with commas e.g. 'one@example.com,two@example.com,etc.'
 
 /**
  * function to get my ConvertKit API Key from properties service
@@ -45,7 +46,7 @@ function onOpen() {
 
   ui.createMenu('ConvertKit Menu')
     .addItem('Get ConvertKit data', 'postConvertKitDataToSheet')
-    .addItem('Email ConvertKit report', 'exportAndSend')
+    .addItem('Email ConvertKit report', 'exportAndSendPDF')
     .addToUi();
 
 }
@@ -57,7 +58,7 @@ function onOpen() {
 /**
  * send pdf of sheet to stakeholders
  */
-function exportAndSend() {
+function exportAndSendPDF() {
 
   // get today's date
   const d = formatDate(new Date());
@@ -88,10 +89,11 @@ function exportAndSend() {
       <a href="${reportUrl}">click here</a>`;
 
   // send email
-  GmailApp.sendEmail('example@example.com',`ConvertKit Report ${d}`,'',
+  GmailApp.sendEmail(RECIPIENTS,`ConvertKit Report ${d}`,'',
     {
       htmlBody: body,
-      attachments: [copiedSheet.getAs(MimeType.PDF)]
+      attachments: [copiedSheet.getAs(MimeType.PDF)],
+      name: 'ConvertKit Sheet Bot'
     });
 
   // delete temporary sheet
