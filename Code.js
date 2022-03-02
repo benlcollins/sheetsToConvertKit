@@ -44,8 +44,57 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
 
   ui.createMenu('ConvertKit Menu')
-    .addItem('Get ConvertKit data', 'postConvertKitDataToSheet')
+    .addItem('Get ConvertKit data', 'postConvertKitDataToSheet_V2')
     .addToUi();
+
+}
+
+/********************************************************************************************
+ * REPORT DISTRIBUTION FUNCTIONS
+********************************************************************************************/
+
+/**
+ * send pdf of sheet to stakeholders
+ */
+function exportAndSend() {
+
+  // get today's date
+  const d = formatDate(new Date());
+
+  // get the spreadsheet
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const reportUrl = ss.getUrl();
+
+  // make copy of Sheet
+  const copiedSheet = ss.copy(`Copy of  ${ss.getName()} ${d}`);
+
+  // copy - paste report as values to avoid broken links when sheets are deleted
+  const copiedSheetReport = copiedSheet.getSheetByName('Report');
+  const vals = copiedSheetReport.getRange(1,1,copiedSheetReport.getMaxRows(),copiedSheetReport.getMaxColumns()).getValues();
+  copiedSheetReport.getRange(1,1,copiedSheetReport.getMaxRows(),copiedSheetReport.getMaxColumns()).setValues(vals);
+
+  // delete redundant sheets
+  const sheets = copiedSheet.getSheets();
+  sheets.forEach(function(sheet){
+    if (sheet.getSheetName() != copiedSheetReport.getSheetName()) {
+      copiedSheet.deleteSheet(sheet);
+    }
+  });
+
+  // create email
+  const body = `A pdf copy of your ConvertKit report is attached.<br><br>
+    To access the live version in your Google Sheets,; 
+      <a href="${reportUrl}">click here</a>`;
+
+  // send email
+  GmailApp.sendEmail('example@example.com',`ConvertKit Report ${d}`,'',
+    {
+      htmlBody: body,
+      attachments: [copiedSheet.getAs(MimeType.PDF)]
+    });
+
+  // delete temporary sheet
+  DriveApp.getFileById(copiedSheet.getId()).setTrashed(true);
 
 }
 
@@ -56,11 +105,39 @@ function onOpen() {
 /**
  * add the data to our sheet
  */
-function postConvertKitDataToSheet() {
+function postConvertKitDataToSheet_V2() {
   
   // Get Sheet
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const listSheet = ss.getSheetByName('listData');
+  const broadcastSheet = ss.getSheetByName('broadcastData');
+  const lastRow = listSheet.getLastRow();
+
+  // get yesterday date
+  const yesterday = getYesterday();
+
+  // get data
+  const totalSubs = getConvertKitTotalSubs();
+  const broadcastData = getBroadcastData();
+
+  // paste list growth results into Sheet
+  listSheet.getRange(lastRow+1,1).setValue(yesterday);
+  listSheet.getRange(lastRow+1,2).setValue(totalSubs);
+  listSheet.getRange(lastRow+1,3).setFormulaR1C1("=R[0]C[-1]-R[-1]C[-1]");
+
+  // paste latest campaign data into Sheet
+  broadcastSheet.getRange(2,1,broadcastData.length,8).setValues(broadcastData);
+  
+}
+
+/**
+ * add the data to our sheet
+ */
+function postConvertKitDataToSheet_V1() {
+  
+  // Get Sheet
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const listSheet = ss.getSheetByName('listDataV1');
   const broadcastSheet = ss.getSheetByName('broadcastData');
   const lastRow = listSheet.getLastRow();
 
@@ -184,6 +261,7 @@ function getIndividualBroadcastData(broadcastID) {
   const data = response.getContentText();
   const jsonData = JSON.parse(data);
 
+  // return data
   return jsonData;
 
 }
@@ -254,11 +332,49 @@ function getConvertKitSubs() {
   // parse data
   const data = response.getContentText();
   const jsonData = JSON.parse(data);
+  console.log('testing here');
+  console.log(jsonData);
   const newSubs = jsonData.total_subscribers;
   
   // return total new subscribers yesterday
   return newSubs;
 }
+
+/**
+ * function to retrieve ConvertKit List Size
+ */
+function getConvertKitTotalSubs() {
+  
+  // get yesterday in correct format
+  const yesterday = getYesterday();
+
+  // URL for the ConvertKit API
+  const root = 'https://api.convertkit.com/v3/';  
+  const endpoint = 'subscribers';
+  const query = `?api_secret=${API_SECRET}`;
+
+  // setup params object
+  var params = {
+    'method': 'GET',
+    'muteHttpExceptions': true
+  };
+  
+  // check api
+  console.log(root + endpoint + query);
+  
+  // call the ConvertKit API
+  const response = UrlFetchApp.fetch(root + endpoint + query, params);
+  
+  // parse data
+  const data = response.getContentText();
+  const jsonData = JSON.parse(data);
+  const totalSubs = jsonData.total_subscribers;
+  console.log(totalSubs)
+  
+  // return total new subscribers yesterday
+  return totalSubs;
+}
+
 
 /********************************************************************************************
  * HELPER FUNCTIONS
