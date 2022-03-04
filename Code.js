@@ -17,6 +17,22 @@ const API_SECRET = getApiSecret();
 const RECIPIENTS = 'example@example.com'; // add extra emails with commas e.g. 'one@example.com,two@example.com,etc.'
 
 /**
+ * function to set ConvertKit API Key and Secret in properties service
+ * 
+ * USE THIS IF YOU DON'T SEE SCRIPT PROPERTIES IN SETTINGS
+ * IF YOU CAN ADD THEM MANUALLY IN THE SETTINGS, YOU CAN IGNORE THIS FUNCTION
+ * DELETE THE KEY AND SECRET VALUES AFTER USING THIS FUNCTION
+ * 
+ */
+function setScriptProperties() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  scriptProperties.setProperties({
+    'CK_API_KEY': '',
+    'CK_API_SECRET': ''
+  });
+}
+
+/**
  * function to get my ConvertKit API Key from properties service
  */
 function getApiKey() {
