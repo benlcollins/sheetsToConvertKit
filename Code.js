@@ -1,7 +1,7 @@
 /** 
  * ConvertKit > Google Sheets Tool
  * 
- * https://developers.convertkit.com/#overview
+ * https://www.benlcollins.com/apps-script/convertkit-report/
  * 
  */
 
@@ -20,14 +20,14 @@ const RECIPIENTS = 'example@example.com'; // add extra emails with commas e.g. '
  * function to get my ConvertKit API Key from properties service
  */
 function getApiKey() {
-  return PropertiesService.getScriptProperties().getProperty("CK_API_KEY");
+  return PropertiesService.getScriptProperties().getProperty('CK_API_KEY');
 }
 
 /**
  * function to get my ConvertKit API Secret from properties service
  */
 function getApiSecret() {
-  return PropertiesService.getScriptProperties().getProperty("CK_API_SECRET");
+  return PropertiesService.getScriptProperties().getProperty('CK_API_SECRET');
 }
 
 /**
@@ -85,8 +85,7 @@ function exportAndSendPDF() {
 
   // create email
   const body = `A pdf copy of your ConvertKit report is attached.<br><br>
-    To access the live version in your Google Sheets,; 
-      <a href="${reportUrl}">click here</a>`;
+    <a href="${reportUrl}">Click here</a> to access the live version in your Google Sheets.`;
 
   // send email
   GmailApp.sendEmail(RECIPIENTS,`ConvertKit Report ${d}`,'',
@@ -113,7 +112,6 @@ function postConvertKitDataToSheet() {
   // Get Sheet
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const listSheet = ss.getSheetByName('listData');
-  const broadcastSheet = ss.getSheetByName('broadcastData');
   const lastRow = listSheet.getLastRow();
 
   // get yesterday date
@@ -121,15 +119,11 @@ function postConvertKitDataToSheet() {
 
   // get data
   const totalSubs = getConvertKitTotalSubs();
-  const broadcastData = getBroadcastData();
 
   // paste list growth results into Sheet
   listSheet.getRange(lastRow+1,1).setValue(yesterday);
   listSheet.getRange(lastRow+1,2).setValue(totalSubs);
   listSheet.getRange(lastRow+1,3).setFormulaR1C1("=R[0]C[-1]-R[-1]C[-1]");
-
-  // paste latest campaign data into Sheet
-  broadcastSheet.getRange(2,1,broadcastData.length,8).setValues(broadcastData);
   
 }
 
@@ -139,135 +133,27 @@ function postConvertKitDataToSheet() {
 ********************************************************************************************/
 
 /**
- * function to return broadcast data
- */
-function getBroadcastData() {
-
-  // URL for the ConvertKit API
-  const root = 'https://api.convertkit.com/v3/';  
-  const endpoint = 'broadcasts';
-  const query = `?api_secret=${API_SECRET}`;
-
-  // setup params object
-  var params = {
-    'method': 'GET',
-    'muteHttpExceptions': true
-  };
-  
-  // check api
-  console.log(root + endpoint + query);
-  
-  // call the ConvertKit API
-  const response = UrlFetchApp.fetch(root + endpoint + query, params);
-  
-  // parse data
-  const data = response.getContentText();
-  const jsonData = JSON.parse(data);
-  const broadcastData = jsonData.broadcasts;
-  
-  // test broadcast data
-  //console.log(broadcastData);
-
-  // empty array to hold broadcast data
-  const broadcastDataArray = [];
-
-  // add individual broadcast details
-  broadcastData.forEach(function(row){
-
-    const id = row.id;
-    const created_date = row.created_at;
-    const subject = row.subject;
-
-    // get individual data
-    const individualData = getIndividualBroadcastData(id);
-
-    const recipients = individualData.broadcast.stats.recipients;
-    const open_rate = individualData.broadcast.stats.open_rate;
-    const click_rate = individualData.broadcast.stats.click_rate;
-    const unsubscribes = individualData.broadcast.stats.unsubscribes;
-    const total_clicks = individualData.broadcast.stats.total_clicks;
-    
-    // push into broadcast data array
-    broadcastDataArray.push([
-      id,
-      created_date,
-      subject,
-      recipients,
-      open_rate,
-      click_rate,
-      unsubscribes,
-      total_clicks
-    ]);
-
-  })
-
-  console.log(broadcastDataArray);
-
-  // return broadcast data
-  return broadcastDataArray;
-
-}
-
-/**
- * function to return individual broadcast data
- */
-function getIndividualBroadcastData(broadcastID) {
-
-  // URL for the ConvertKit API
-  const root = 'https://api.convertkit.com/v3/';  
-  const endpoint = `broadcasts/${broadcastID}/stats`;
-  const query = `?api_secret=${API_SECRET}`;
-
-  // setup params object
-  var params = {
-    'method': 'GET',
-    'muteHttpExceptions': true
-  };
-  
-  // check api
-  //console.log(root + endpoint + query);
-  
-  // call the ConvertKit API
-  const response = UrlFetchApp.fetch(root + endpoint + query, params);
-  
-  // parse data
-  const data = response.getContentText();
-  const jsonData = JSON.parse(data);
-
-  // return data
-  return jsonData;
-
-}
-
-/**
  * function to retrieve ConvertKit List Size
  */
 function getConvertKitTotalSubs() {
-  
-  // get yesterday in correct format
-  const yesterday = getYesterday();
 
   // URL for the ConvertKit API
   const root = 'https://api.convertkit.com/v3/';  
   const endpoint = 'subscribers';
   const query = `?api_secret=${API_SECRET}`;
-
-  // setup params object
-  var params = {
-    'method': 'GET',
-    'muteHttpExceptions': true
-  };
   
   // check api
   console.log(root + endpoint + query);
   
   // call the ConvertKit API
-  const response = UrlFetchApp.fetch(root + endpoint + query, params);
+  const response = UrlFetchApp.fetch(root + endpoint + query);
   
   // parse data
   const data = response.getContentText();
   const jsonData = JSON.parse(data);
   const totalSubs = jsonData.total_subscribers;
+  
+  // check data
   console.log(totalSubs)
   
   // return total new subscribers yesterday
